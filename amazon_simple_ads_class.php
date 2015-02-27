@@ -48,6 +48,7 @@ class AmazonAds {
    * @return array SearchResults (or empty array if none): int cachedate (UnixTime), array[0..n] of array of strings title,url,img,price
    */
   public function getItemByAsin($asin, $response_group='Medium') {
+    $xml = '';
     $age = $this->getCache($asin,$xml);
     if ( empty($xml) ) { // cache was either invalid or empty
       $tmp = '';
@@ -103,7 +104,6 @@ class AmazonAds {
     }
     if ( !empty($sim) ) { // we've got some too close matches
       $sim = array_unique($sim);
-//echo "Removing ".count($sim)." of $ic items<br>";
       foreach( $sim as $s ) {
         unset ($items[$s]);
       }
@@ -169,11 +169,13 @@ class AmazonAds {
     for ($i=0; $i<$sic; ++$i) { // walk search indexes
       for ( $k=0; $k<$kc; ++$k ) { // walk keyword combinations
         $tmp = $this->getItemByKeyword($keywords[$k], $searchIndexes[$i], 0); // unlimited results
-        $items = array_merge( $items, $tmp['items'] );
-        if ( $tmp['cachedate'] < $cachedate ) $cachedate = $tmp['cachedate'];
+        if ( is_array($tmp['items']) ) { // no results, nothing to do
+          $items = array_merge( $items, $tmp['items'] );
+          if ( !empty($tmp['cachedate']) && $tmp['cachedate'] < $cachedate ) $cachedate = $tmp['cachedate'];
+        }
       }
     }
-    if (similarity > 0) $this->removeSimilar($items, $similarity);
+    if ($similarity > 0) $this->removeSimilar($items, $similarity);
 
     if ($limit < 1) { // getAll
       return array(
@@ -182,13 +184,15 @@ class AmazonAds {
       );
     }
 
-    // Pick $limit random elements
-    $ids = array_rand($items,$limit);
-    $litems = array();
-    if ( is_array($ids) ) {
-      foreach ($ids as $id) $litems[] = $items[$id];
-    } else {
-      $litems[] = $items[$ids];
+    // Pick $limit random elements if we have more than requested
+    if ( $limit < count($items) ) {
+      $ids = array_rand($items,$limit);
+      $litems = array();
+      if ( is_array($ids) ) {
+        foreach ($ids as $id) $litems[] = $items[$id];
+      } else {
+        $litems[] = $items[$ids];
+      }
     }
 
     return array(
@@ -243,7 +247,7 @@ class AmazonAds {
     }
 
     // remove items which are too similar
-    if (similarity > 0) $this->removeSimilar($items, $similarity);
+    if ($similarity > 0) $this->removeSimilar($items, $similarity);
 
     if ( $limit < 1 || count($items) <= $limit ) { // getAll
       return array(
