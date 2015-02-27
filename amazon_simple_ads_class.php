@@ -21,6 +21,19 @@ class AmazonAds {
   public function __construct($public, $private, $associate_tag, $local_site='de') {
     $this->api   = new AmazonProductAPI($public, $private, $associate_tag, $local_site);
     $this->cache = new SimpleCache();
+    if ( isset($_SERVER['HTTPS']) ) $this->ssl = TRUE;
+    else $this->ssl = FALSE;
+  }
+
+  /** Override auto-SSL setting
+   *  By default, the constructor checks the current connection and matches SSL
+   *  mode (to update image URLs accordingly). Here you can override this.
+   * @class AmazonAds
+   * @method setSSL
+   * @param boolean useSSL
+   */
+  public function setSSL($ssl) {
+    $this->ssl = (bool) $ssl;
   }
 
   /** Load from cache if available
@@ -71,10 +84,12 @@ class AmazonAds {
     $items     = array();
 
     for ($i=0; $i<$resItems; ++$i) {
+      $img = (string) $xml->Items->Item[$i]->SmallImage->URL;
+      if ( $this->ssl ) $img = str_replace('http://ecx.images-amazon.com/','https://images-na.ssl-images-amazon.com/',$img);
       $items[] = array(
         'title' => (string) $xml->Items->Item[$i]->ItemAttributes->Title,
         'url'   => (string) $xml->Items->Item[$i]->DetailPageURL,
-        'img'   => (string) $xml->Items->Item[$i]->SmallImage->URL,
+        'img'   => $img,
         'price' => (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice
       );
     }
@@ -238,10 +253,12 @@ class AmazonAds {
     $items     = array();
 
     for ($i=0; $i<$resItems; ++$i) {
+      $img = (string) $xml->Items->Item[$i]->SmallImage->URL;
+      if ( $this->ssl ) $img = str_replace('http://ecx.images-amazon.com/','https://images-na.ssl-images-amazon.com/',$img);
       $items[] = array(
         'title' => (string) $xml->Items->Item[$i]->ItemAttributes->Title,
         'url'   => (string) $xml->Items->Item[$i]->DetailPageURL,
-        'img'   => (string) $xml->Items->Item[$i]->SmallImage->URL,
+        'img'   => $img,
         'price' => (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice
       );
     }
