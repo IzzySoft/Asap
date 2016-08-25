@@ -11,6 +11,52 @@ require_once(__DIR__."/class.simplecache.php");
  */
 class AmazonAds {
 
+  /** Are we in SSL mode?
+   *  If so, we want to have Amazon image URLs adjusted accordingly.
+   * @class AmazonAds
+   * @attribute private bool ssl
+   */
+  protected $ssl = false;
+
+  /** URL of the directory we serve images from
+   *  This is for more privacy of your visitors. Default is NULL, i.e. this is disabled.
+   * @class AmazonAds
+   * @attribute private string imgBaseURL
+   * @see self::setImgBase
+   */
+  protected $imgBaseURL = NULL;
+
+  /** Name of the directory to save image files to
+   * @class AmazonAds
+   * @attribute private string imgBaseURL
+   * @see self::setImgBase
+   */
+  protected $imgCacheName = NULL;
+
+  /** Activate privacy mode: set the ImgBase
+   *  Note: Setting this to NULL will disable local images. Otherwise, $urlbase must match
+   *        CACHE_DIR.'/'.$cachename (which must exist and be writeable by the web server; use e.g. symlinks).
+   * @class AmazonAds
+   * @method setImgBase
+   * @param string urlbase          Base name of the URL images can be retrieved from (e.g. '/shared/images/asap')
+   * @param opt string cachename    Name to use for the images to store. This will be appended to the CACHE_DIR constant. Default: 'asap'
+   * @return bool success
+   */
+  public function setImgBase($urlbase,$cachename='asap') {
+    if ( empty($urlbase) || $urlbase == NULL ) {
+      $this->imgBaseURL = NULL;
+      return true;
+    } elseif ( empty($cachename) || !is_dir(CACHE_DIR.'/'.$cachename) ) {
+      trigger_error('The specified cache directory does not exist! Switching off local image mode.', E_USER_NOTICE);
+      $this->imgBaseURL = NULL;
+      return false;
+    } else {
+      $this->imgBaseURL = $urlbase;
+      $this->imgCacheName = CACHE_DIR.'/'.$cachename;
+      return true;
+    }
+  }
+
   /** Initialize the class with your credentials
    * @constructor AmazonAds
    * @param string public Public key to be used
@@ -34,6 +80,22 @@ class AmazonAds {
    */
   public function setSSL($ssl) {
     $this->ssl = (bool) $ssl;
+  }
+
+  /** Get an image file from Amazon and save it locally
+   * @class AmazonAds
+   * @method downloadImage
+   * @param str url     URL to download
+   * @param str asin    ASIN of the product (used as filename, extension added)
+   * @return bool success
+   */
+  protected function downloadImage($url,$asin) {
+    if ( empty($url) || empty($asin) ) return false;
+    $ext = preg_replace('!.*\.([^\.]+)$!','\1',$url);
+    $localname = $this->imgCacheName."/${asin}.${ext}";
+    if ( file_exists($localname) ) return true;
+    if ( file_put_contents($localname, file_get_contents($url)) !== FALSE ) return true;
+    return false;
   }
 
   /** Load from cache if available
@@ -88,6 +150,10 @@ class AmazonAds {
       if (isset($xml->Items->Item[$i]->DetailPageURL)) $url = (string) $xml->Items->Item[$i]->DetailPageURL; else continue;
       isset($xml->Items->Item[$i]->SmallImage->URL) ? $img = (string) $xml->Items->Item[$i]->SmallImage->URL : $img = '';
       if ( $this->ssl ) $img = str_replace('http://ecx.images-amazon.com/','https://images-na.ssl-images-amazon.com/',$img);
+      if ( $this->imgBaseURL !== NULL ) { // share images from our server, so cache them
+        $iasin = (string) $xml->Items->Item[$i]->ASIN;
+        if ( $this->downloadImage($img,$iasin) ) $img = $this->imgBaseURL . "/${iasin}" . preg_replace('!.*(\.[^\.]+)$!','\1',$img);
+      }
       isset($xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice) ? $price = (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice : $price = '';
       $items[] = array(
         'title' => $title,
@@ -258,6 +324,10 @@ class AmazonAds {
     for ($i=0; $i<$resItems; ++$i) {
       $img = (string) $xml->Items->Item[$i]->SmallImage->URL;
       if ( $this->ssl ) $img = str_replace('http://ecx.images-amazon.com/','https://images-na.ssl-images-amazon.com/',$img);
+      if ( $this->imgBaseURL !== NULL ) { // share images from our server, so cache them
+        $asin = (string) $xml->Items->Item[$i]->ASIN;
+        if ( $this->downloadImage($img,$asin) ) $img = $this->imgBaseURL . "/${asin}" . preg_replace('!.*(\.[^\.]+)$!','\1',$img);
+      }
       $items[] = array(
         'title' => (string) $xml->Items->Item[$i]->ItemAttributes->Title,
         'url'   => (string) $xml->Items->Item[$i]->DetailPageURL,

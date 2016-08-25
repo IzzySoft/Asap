@@ -56,6 +56,14 @@ cache file is replaced. If not, the file will stay forever; so if you're
 generating your queries dynamically, you might wish to set up a Cron job to
 take care for older files.
 
+Moreover, if you want to offer your visitors some more privacy and not have
+the images served by Amazon servers, create a corresponding sub directory
+right inside the cache directory (default name is expected to be `asap`;
+if you want something different, see the `setImgBase` method's second
+parameter). This must be *writeable* by the web server process – and needs
+to be accessible from the `DOCUMENT_ROOT` (either use an alias for that,
+or play with symlinks).
+
 
 ## Usage
 
@@ -72,6 +80,7 @@ with your real ones:
 ```
 require_once('amazon_simple_ads_class.php');
 $amazon = new AmazonAds('public_key', 'private_key', 'associate_id', 'com');
+$amazon->setImgBase('/shared/images/asap'); // optional for more privacy; see „Installation“ above)
 ```
 
 As written, use your AWS public and private keys here, plus the Amazon
