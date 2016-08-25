@@ -84,13 +84,16 @@ class AmazonAds {
     $items     = array();
 
     for ($i=0; $i<$resItems; ++$i) {
-      $img = (string) $xml->Items->Item[$i]->SmallImage->URL;
+      if (isset($xml->Items->Item[$i]->ItemAttributes->Title)) $title = (string) $xml->Items->Item[$i]->ItemAttributes->Title; else continue;
+      if (isset($xml->Items->Item[$i]->DetailPageURL)) $url = (string) $xml->Items->Item[$i]->DetailPageURL; else continue;
+      isset($xml->Items->Item[$i]->SmallImage->URL) ? $img = (string) $xml->Items->Item[$i]->SmallImage->URL : $img = '';
       if ( $this->ssl ) $img = str_replace('http://ecx.images-amazon.com/','https://images-na.ssl-images-amazon.com/',$img);
+      isset($xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice) ? $price = (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice : $price = '';
       $items[] = array(
-        'title' => (string) $xml->Items->Item[$i]->ItemAttributes->Title,
-        'url'   => (string) $xml->Items->Item[$i]->DetailPageURL,
+        'title' => $title,
+        'url'   => $url,
         'img'   => $img,
-        'price' => (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice
+        'price' => $price
       );
     }
 
@@ -200,9 +203,9 @@ class AmazonAds {
     }
 
     // Pick $limit random elements if we have more than requested
+    $litems = array();
     if ( $limit < count($items) ) {
       $ids = array_rand($items,$limit);
-      $litems = array();
       if ( is_array($ids) ) {
         foreach ($ids as $id) $litems[] = $items[$id];
       } else {
