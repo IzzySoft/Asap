@@ -228,11 +228,11 @@ class AmazonAds {
     }
     unset ($tmp); // discard
     if ( empty($plus) ) { // normal searchstring like "word1 word2 word3"
-      $keywords[] = $keyword;
+      $keywords = explode(' ',$keyword);
     } elseif ( count($many)==1 ) { // just a single word without prefix, like "+word1 +word2 word3"
       $keywords[] = $plus . $many[0];
     } elseif ( empty($many) ) { // all words with prefix, like "+word1 +word2 +word3"
-      $keywords[] = trim($plus);
+      $keywords = explode(' ',trim($plus));
     } else { // we have at least one prefixed and multiple non-prefixed words, e.g. "+word1 word2 word3"
       foreach ( $many as $m ) {
         $keywords[] = $plus . $m;
@@ -253,7 +253,7 @@ class AmazonAds {
     for ($i=0; $i<$sic; ++$i) { // walk search indexes
       for ( $k=0; $k<$kc; ++$k ) { // walk keyword combinations
         $tmp = $this->getItemByKeyword($keywords[$k], $searchIndexes[$i], 0); // unlimited results
-        if ( is_array($tmp['items']) ) { // no results, nothing to do
+        if ( array_key_exists('items',$tmp) && is_array($tmp['items']) ) { // no results, nothing to do
           $items = array_merge( $items, $tmp['items'] );
           if ( !empty($tmp['cachedate']) && $tmp['cachedate'] < $cachedate ) $cachedate = $tmp['cachedate'];
         }
