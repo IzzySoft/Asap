@@ -54,15 +54,14 @@ class SimpleCache {
       }
       return;
     }
-    if ( is_dir(dirname($fname)) ) {
-      $fp = gzopen ($fname, "w");
+    if ( is_dir(dirname($fname)) && $fp = @gzopen($fname, "w") ) {
       gzputs ($fp, $content);
       gzclose ($fp);
       if ( !empty($timestamp) ) {
         touch($fname,strtotime($timestamp));
       }
     } else {
-      trigger_error("Warning: directory for '${fname}' does not exist, no cache written.",E_USER_NOTICE);
+      trigger_error("Warning: directory for '${fname}' does not exist or no permission to write the file, no cache written.",E_USER_NOTICE);
     }
   }
 
