@@ -156,7 +156,7 @@ class AmazonAds {
       }
       isset($xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice) ? $price = (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice : $price = '';
       $items[] = array(
-        'title' => $title,
+        'title' => preg_replace('!([A-z],)([A-z])!','\1&#8203;\2',$title), // insert zero-width space if comma not followed by space, for auto line breaks
         'url'   => $url,
         'img'   => $img,
         'price' => $price
@@ -328,8 +328,9 @@ class AmazonAds {
         $asin = (string) $xml->Items->Item[$i]->ASIN;
         if ( $this->downloadImage($img,$asin) ) $img = $this->imgBaseURL . "/${asin}" . preg_replace('!.*(\.[^\.]+)$!','\1',$img);
       }
+      $title = (string) $xml->Items->Item[$i]->ItemAttributes->Title;
       $items[] = array(
-        'title' => (string) $xml->Items->Item[$i]->ItemAttributes->Title,
+        'title' => preg_replace('!([A-z],)([A-z])!','\1&#8203;\2',$title), // insert zero-width space if comma not followed by space, for auto line breaks
         'url'   => (string) $xml->Items->Item[$i]->DetailPageURL,
         'img'   => $img,
         'price' => (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice
