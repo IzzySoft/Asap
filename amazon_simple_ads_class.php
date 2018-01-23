@@ -330,11 +330,13 @@ class AmazonAds {
       }
       $title = (string) $xml->Items->Item[$i]->ItemAttributes->Title;
       $url   = (string) $xml->Items->Item[$i]->DetailPageURL;
+      if ( property_exists($xml->Items->Item[$i]->OfferSummary,'LowestNewPrice') && property_exists($xml->Items->Item[$i]->OfferSummary->LowestNewPrice,'FormattedPrice') ) $price = (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice; // some items have no price
+      else $price = '';
       $items[] = array(
         'title' => preg_replace('!([A-z],)([A-z])!','\1&#8203;\2',$title), // insert zero-width space if comma not followed by space, for auto line breaks
         'url'   => preg_replace('/&(?!amp;)/','&amp;',$url),
         'img'   => $img,
-        'price' => (string) $xml->Items->Item[$i]->OfferSummary->LowestNewPrice->FormattedPrice
+        'price' => $price
       );
     }
 
